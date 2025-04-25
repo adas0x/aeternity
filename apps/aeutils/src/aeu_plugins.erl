@@ -197,13 +197,20 @@ ensure_empty_lib_subdir(Path) ->
 delete_all_under(Dir) ->
     case file:list_dir(Dir) of
         {ok, Fs} ->
-            lists:foreach(
-              fun(F) ->
-                      %% this handles both dirs and regular files, recursively
-                      ok = file:del_dir_r(filename:join(Dir, F))
-              end, Fs);
+            delete_items(Dir, Fs);
         {error, _} = Err ->
             error({cannot_read_dir, Dir, Err})
+    end.
+
+delete_items(_Dir, []) ->
+    ok;
+delete_items(Dir, [F | Rest]) ->
+    Path = filename:join(Dir, F),
+    case file:del_dir_r(Path) of
+        ok ->
+            delete_items(Dir, Rest);
+        {error, Reason} ->
+            {error, {failed_to_delete, Path, Reason}}
     end.
 
 final_lib_dirs(Root, Dirs) ->
